@@ -2385,7 +2385,6 @@
           "type": "string",
           "description": "The SSH public key used for secure access to cluster nodes. When set, this key\nis distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
           "maxLength": 8192,
-          "pattern": "^(?<type>[A-Za-z0-9._@-]+)[ \t]+(?<key>[A-Za-z0-9+/]+=*)(?:[ \t]+(?<comment>.*))?$",
           "x-ms-mutability": [
             "read",
             "update",
@@ -2504,7 +2503,6 @@
           "type": "string",
           "description": "The SSH public key used for secure access to cluster nodes. When set, this key\nis distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
           "maxLength": 8192,
-          "pattern": "^(?<type>[A-Za-z0-9._@-]+)[ \t]+(?<key>[A-Za-z0-9+/]+=*)(?:[ \t]+(?<comment>.*))?$",
           "x-ms-mutability": [
             "read",
             "update",
