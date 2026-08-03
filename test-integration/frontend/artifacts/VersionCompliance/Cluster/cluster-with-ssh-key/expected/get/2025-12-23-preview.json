@@ -19,7 +19,18 @@
 		},
 		"etcd": {
 			"dataEncryption": {
-				"keyManagementMode": "PlatformManaged"
+				"customerManaged": {
+					"encryptionType": "KMS",
+					"kms": {
+						"activeKey": {
+							"name": "ssh-encryption-key",
+							"version": "2026-06-30"
+						},
+						"vaultName": "ssh-key-vault",
+						"visibility": "Public"
+					}
+				},
+				"keyManagementMode": "CustomerManaged"
 			}
 		},
 		"network": {

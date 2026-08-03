@@ -17,9 +17,21 @@
 		"clusterImageRegistry": {
 			"state": "Enabled"
 		},
+		"cryptoRestrictions": "None",
 		"etcd": {
 			"dataEncryption": {
-				"keyManagementMode": "PlatformManaged"
+				"customerManaged": {
+					"encryptionType": "KMS",
+					"kms": {
+						"activeKey": {
+							"name": "ssh-encryption-key",
+							"version": "2026-06-30"
+						},
+						"vaultName": "ssh-key-vault",
+						"visibility": "Public"
+					}
+				},
+				"keyManagementMode": "CustomerManaged"
 			}
 		},
 		"ingress": {
@@ -42,9 +54,6 @@
 			"vnetIntegrationSubnetId": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.Network/virtualNetworks/vnet/subnets/swift-subnet"
 		},
 		"provisioningState": "Succeeded",
-		"status": {
-			"conditions": []
-		},
 		"version": {
 			"channelGroup": "stable",
 			"id": "4.20"
