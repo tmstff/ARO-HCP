@@ -1079,7 +1079,6 @@ func (h HcpOpenShiftClusterProperties) MarshalJSON() ([]byte, error) {
 	populate(objectMap, "ingress", h.Ingress)
 	populate(objectMap, "network", h.Network)
 	populate(objectMap, "nodeDrainTimeoutMinutes", h.NodeDrainTimeoutMinutes)
-	populate(objectMap, "nodeSshPublicKey", h.NodeSSHPublicKey)
 	populate(objectMap, "platform", h.Platform)
 	populate(objectMap, "provisioningState", h.ProvisioningState)
 	populate(objectMap, "status", h.Status)
@@ -1129,9 +1128,6 @@ func (h *HcpOpenShiftClusterProperties) UnmarshalJSON(data []byte) error {
 		case "nodeDrainTimeoutMinutes":
 			err = unpopulate(val, "NodeDrainTimeoutMinutes", &h.NodeDrainTimeoutMinutes)
 			delete(rawMsg, key)
-		case "nodeSshPublicKey":
-			err = unpopulate(val, "NodeSSHPublicKey", &h.NodeSSHPublicKey)
-			delete(rawMsg, key)
 		case "platform":
 			err = unpopulate(val, "Platform", &h.Platform)
 			delete(rawMsg, key)
@@ -1159,7 +1155,6 @@ func (h HcpOpenShiftClusterPropertiesUpdate) MarshalJSON() ([]byte, error) {
 	populate(objectMap, "etcd", h.Etcd)
 	populate(objectMap, "imageDigestMirrors", h.ImageDigestMirrors)
 	populate(objectMap, "nodeDrainTimeoutMinutes", h.NodeDrainTimeoutMinutes)
-	populate(objectMap, "nodeSshPublicKey", h.NodeSSHPublicKey)
 	populate(objectMap, "platform", h.Platform)
 	populate(objectMap, "version", h.Version)
 	return json.Marshal(objectMap)
@@ -1185,9 +1180,6 @@ func (h *HcpOpenShiftClusterPropertiesUpdate) UnmarshalJSON(data []byte) error {
 			delete(rawMsg, key)
 		case "nodeDrainTimeoutMinutes":
 			err = unpopulate(val, "NodeDrainTimeoutMinutes", &h.NodeDrainTimeoutMinutes)
-			delete(rawMsg, key)
-		case "nodeSshPublicKey":
-			err = unpopulate(val, "NodeSSHPublicKey", &h.NodeSSHPublicKey)
 			delete(rawMsg, key)
 		case "platform":
 			err = unpopulate(val, "Platform", &h.Platform)

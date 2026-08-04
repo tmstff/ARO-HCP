@@ -890,21 +890,16 @@ func TestURL(t *testing.T) {
 	}
 }
 
-func TestMatchesRegex_NodeSshPublicKey(t *testing.T) {
+func TestNodeSshPublicKeys_SingleKeyRegex(t *testing.T) {
 	ctx := context.Background()
 	op := operation.Operation{Type: operation.Create}
-	fldPath := field.NewPath("properties").Child("nodeSshPublicKey")
+	fldPath := field.NewPath("properties").Child("nodeSshPublicKeys").Index(0)
 
 	tests := []struct {
 		name         string
 		value        *string
 		expectErrors []utils.ExpectedError
 	}{
-		{
-			name:         "nil - valid",
-			value:        nil,
-			expectErrors: []utils.ExpectedError{},
-		},
 		{
 			name:         "ed25519 with comment - valid",
 			value:        ptr.To("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestKey test@example.com"),
@@ -919,21 +914,21 @@ func TestMatchesRegex_NodeSshPublicKey(t *testing.T) {
 			name:  "type only without key data - invalid",
 			value: ptr.To("ssh-ed25519"),
 			expectErrors: []utils.ExpectedError{
-				{FieldPath: "properties.nodeSshPublicKey", Message: "must be a valid SSH public key"},
+				{FieldPath: "properties.nodeSshPublicKeys[0]", Message: "must be a valid SSH public key"},
 			},
 		},
 		{
 			name:  "raw base64 without type - invalid",
 			value: ptr.To("AAAAC3NzaC1lZDI1NTE5AAAAITestKey"),
 			expectErrors: []utils.ExpectedError{
-				{FieldPath: "properties.nodeSshPublicKey", Message: "must be a valid SSH public key"},
+				{FieldPath: "properties.nodeSshPublicKeys[0]", Message: "must be a valid SSH public key"},
 			},
 		},
 		{
 			name:  "arbitrary string - invalid",
 			value: ptr.To("not-an-ssh-key"),
 			expectErrors: []utils.ExpectedError{
-				{FieldPath: "properties.nodeSshPublicKey", Message: "must be a valid SSH public key"},
+				{FieldPath: "properties.nodeSshPublicKeys[0]", Message: "must be a valid SSH public key"},
 			},
 		},
 	}
@@ -941,6 +936,73 @@ func TestMatchesRegex_NodeSshPublicKey(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			errs := MatchesRegex(ctx, op, fldPath, tt.value, nil, nodeSshPublicKeyRegex, nodeSshPublicKeyErrorString)
+			utils.VerifyErrorsMatch(t, tt.expectErrors, errs)
+		})
+	}
+}
+
+func TestNodeSshPublicKeys_SliceValidation(t *testing.T) {
+	ctx := context.Background()
+	op := operation.Operation{Type: operation.Create}
+	fldPath := field.NewPath("properties")
+
+	validKey1 := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKey1 user@host"
+	validKey2 := "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7KEY2"
+	validKey3 := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKey3 c@d"
+	validKey4 := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKey4"
+	validKey5 := "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKey5"
+
+	tests := []struct {
+		name         string
+		keys         []string
+		expectErrors []utils.ExpectedError
+	}{
+		{
+			name:         "nil slice - valid",
+			keys:         nil,
+			expectErrors: []utils.ExpectedError{},
+		},
+		{
+			name:         "single valid key - valid",
+			keys:         []string{validKey1},
+			expectErrors: []utils.ExpectedError{},
+		},
+		{
+			name:         "two valid keys - valid",
+			keys:         []string{validKey1, validKey2},
+			expectErrors: []utils.ExpectedError{},
+		},
+		{
+			name:         "five keys (max) - valid",
+			keys:         []string{validKey1, validKey2, validKey3, validKey4, validKey5},
+			expectErrors: []utils.ExpectedError{},
+		},
+		{
+			name: "six keys - too many",
+			keys: []string{validKey1, validKey2, validKey3, validKey4, validKey5, validKey1},
+			expectErrors: []utils.ExpectedError{
+				{FieldPath: "properties.nodeSshPublicKeys", Message: "Too many"},
+			},
+		},
+		{
+			name: "second key invalid",
+			keys: []string{validKey1, "not-an-ssh-key"},
+			expectErrors: []utils.ExpectedError{
+				{FieldPath: "properties.nodeSshPublicKeys[1]", Message: "must be a valid SSH public key"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errs := field.ErrorList{}
+			if len(tt.keys) > 5 {
+				errs = append(errs, field.TooMany(fldPath.Child("nodeSshPublicKeys"), len(tt.keys), 5))
+			}
+			for i, key := range tt.keys {
+				keyCopy := key
+				errs = append(errs, MatchesRegex(ctx, op, fldPath.Child("nodeSshPublicKeys").Index(i), &keyCopy, nil, nodeSshPublicKeyRegex, nodeSshPublicKeyErrorString)...)
+			}
 			utils.VerifyErrorsMatch(t, tt.expectErrors, errs)
 		})
 	}

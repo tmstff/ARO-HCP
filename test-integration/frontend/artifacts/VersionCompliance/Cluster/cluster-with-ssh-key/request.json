@@ -31,7 +31,7 @@
 			"podCidr": "10.128.0.0/14",
 			"serviceCidr": "172.30.0.0/16"
 		},
-		"nodeSshPublicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestKeyForIntegrationTesting test@example.com",
+		"nodeSshPublicKeys": ["ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestKeyForIntegrationTesting test@example.com", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7TestKeyForIntegrationTesting2 test2@example.com"],
 		"platform": {
 			"managedResourceGroup": "managed-rg-vc-ssh-key",
 			"networkSecurityGroupId": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.Network/networkSecurityGroups/nsg",

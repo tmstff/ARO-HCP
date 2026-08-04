@@ -29,10 +29,10 @@ import (
 )
 
 var _ = Describe("Customer", func() {
-	// Deadline for v20260630preview API deployment in non-dev environments
-	timeBombDeadline := framework.Must(time.Parse(time.RFC3339, "2026-07-31T00:00:00Z"))
+	// Deadline for v20260901preview API deployment in non-dev environments
+	timeBombDeadline := framework.Must(time.Parse(time.RFC3339, "2026-10-31T00:00:00Z"))
 
-	It("should persist nodeSshPublicKey set at cluster creation and return it via ARM GET",
+	It("should persist nodeSshPublicKeys set at cluster creation and return them via ARM GET",
 		labels.RequireNothing,
 		labels.Critical,
 		labels.Positive,
@@ -53,15 +53,22 @@ var _ = Describe("Customer", func() {
 			resourceGroup, err := tc.NewResourceGroup(ctx, "node-ssh", tc.Location())
 			Expect(err).NotTo(HaveOccurred(), "failed to create resource group for node SSH test")
 
-			By("creating cluster parameters with nodeSshPublicKey")
-			const sshPublicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestKeyForE2ETesting e2e@test"
-			clusterParams := framework.NewDefaultClusterParams20260630()
+			By("creating cluster parameters with nodeSshPublicKeys")
+			sshKey1, _, err := framework.GenerateSSHKeyPair()
+			Expect(err).NotTo(HaveOccurred(), "failed to generate first SSH key pair for node SSH test")
+			sshKey2, _, err := framework.GenerateSSHKeyPair()
+			Expect(err).NotTo(HaveOccurred(), "failed to generate second SSH key pair for node SSH test")
+			sshPublicKeys := []*string{
+				to.Ptr(sshKey1),
+				to.Ptr(sshKey2),
+			}
+			clusterParams := framework.NewDefaultClusterParams20260901()
 			clusterParams.ClusterName = customerClusterName
 			clusterParams.ManagedResourceGroupName = framework.SuffixName(*resourceGroup.Name, "-managed", 64)
-			clusterParams.NodeSSHPublicKey = to.Ptr(sshPublicKey)
+			clusterParams.NodeSSHPublicKeys = sshPublicKeys
 
 			By("creating customer resources (infrastructure and managed identities)")
-			clusterParams, err = tc.CreateClusterCustomerResources20260630(ctx,
+			clusterParams, err = tc.CreateClusterCustomerResources20260901(ctx,
 				resourceGroup,
 				clusterParams,
 				map[string]interface{}{},
@@ -70,8 +77,8 @@ var _ = Describe("Customer", func() {
 			)
 			Expect(err).NotTo(HaveOccurred(), "failed to create customer resources for node SSH cluster")
 
-			By("creating the HCP cluster with nodeSshPublicKey via v20260630preview")
-			err = tc.CreateHCPClusterFromParam20260630(ctx,
+			By("creating the HCP cluster with nodeSshPublicKeys via v20260901preview")
+			err = tc.CreateHCPClusterFromParam20260901(ctx,
 				GinkgoLogr,
 				*resourceGroup.Name,
 				clusterParams,
@@ -80,27 +87,31 @@ var _ = Describe("Customer", func() {
 			)
 			if isAPINotDeployedError(err) {
 				if time.Now().Before(timeBombDeadline) {
-					Skip(fmt.Sprintf("v20260630preview API not yet deployed; skipping until %s", timeBombDeadline.Format(time.RFC3339)))
+					Skip(fmt.Sprintf("v20260901preview API not yet deployed; skipping until %s", timeBombDeadline.Format(time.RFC3339)))
 				}
-				Fail(fmt.Sprintf("v20260630preview API still not deployed as of %s deadline", timeBombDeadline.Format(time.RFC3339)))
+				Fail(fmt.Sprintf("v20260901preview API still not deployed as of %s deadline", timeBombDeadline.Format(time.RFC3339)))
 			}
-			Expect(err).NotTo(HaveOccurred(), "failed to create HCP cluster %q with nodeSshPublicKey", customerClusterName)
+			Expect(err).NotTo(HaveOccurred(), "failed to create HCP cluster %q with nodeSshPublicKeys", customerClusterName)
 
-			By("verifying nodeSshPublicKey is returned unchanged via ARM GET")
-			clientFactory := tc.Get20260630ClientFactoryOrDie(ctx)
+			By("verifying nodeSshPublicKeys are returned unchanged via ARM GET")
+			clientFactory := tc.Get20260901ClientFactoryOrDie(ctx)
 			cluster, err := clientFactory.NewHcpOpenShiftClustersClient().Get(
 				ctx,
 				*resourceGroup.Name,
 				customerClusterName,
 				nil,
 			)
-			Expect(err).NotTo(HaveOccurred(), "failed to get cluster %q to verify nodeSshPublicKey", customerClusterName)
+			Expect(err).NotTo(HaveOccurred(), "failed to get cluster %q to verify nodeSshPublicKeys", customerClusterName)
 			Expect(cluster.Properties).ToNot(BeNil(), "cluster %q Properties was nil", customerClusterName)
-			Expect(cluster.Properties.NodeSSHPublicKey).ToNot(BeNil(),
-				"cluster %q Properties.NodeSSHPublicKey was nil", customerClusterName)
-			Expect(*cluster.Properties.NodeSSHPublicKey).To(Equal(sshPublicKey),
-				"cluster %q nodeSshPublicKey should match what was set at creation", customerClusterName)
-			GinkgoLogr.Info("Cluster nodeSshPublicKey verified", "clusterName", customerClusterName)
+			Expect(cluster.Properties.NodeSSHPublicKeys).To(HaveLen(len(sshPublicKeys)),
+				"cluster %q Properties.NodeSSHPublicKeys length mismatch", customerClusterName)
+			for i, key := range sshPublicKeys {
+				Expect(cluster.Properties.NodeSSHPublicKeys[i]).ToNot(BeNil(),
+					"cluster %q Properties.NodeSSHPublicKeys[%d] was nil", customerClusterName, i)
+				Expect(*cluster.Properties.NodeSSHPublicKeys[i]).To(Equal(*key),
+					"cluster %q nodeSshPublicKeys[%d] should match what was set at creation", customerClusterName, i)
+			}
+			GinkgoLogr.Info("Cluster nodeSshPublicKeys verified", "clusterName", customerClusterName)
 		},
 	)
 })

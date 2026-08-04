@@ -45,7 +45,6 @@
 			"serviceCidr": "172.30.0.0/16"
 		},
 		"nodeDrainTimeoutMinutes": 0,
-		"nodeSshPublicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITestKeyForIntegrationTesting test@example.com",
 		"platform": {
 			"managedResourceGroup": "managed-rg-vc-ssh-key",
 			"networkSecurityGroupId": "/subscriptions/6b690bec-0c16-4ecb-8f67-781caf40bba7/resourceGroups/bar/providers/Microsoft.Network/networkSecurityGroups/nsg",

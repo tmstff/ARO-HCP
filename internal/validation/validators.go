@@ -370,8 +370,7 @@ var (
 	diskEncryptionSetNameRegex       = regexp.MustCompile(diskEncryptionSetName)
 	diskEncryptionSetNameErrorString = `(must contain only alphanumeric characters, underscores, and hyphens)`
 
-	// nodeSshPublicKeyPattern must match the @pattern in hcpCluster-models.tsp for nodeSshPublicKey.
-	// Cross-checked by TestNodeSshPublicKeyPatternMatchesOpenAPI in validators_test.go.
+	// nodeSshPublicKeyPattern matches a single SSH public key: <type> <base64-key> [optional comment].
 	// Uses interpreted string (not raw) so \t equals 0x09, matching the JSON-parsed openapi.json pattern.
 	nodeSshPublicKeyPattern     = "^(?<type>[A-Za-z0-9._@-]+)[ \t]+(?<key>[A-Za-z0-9+/]+=*)(?:[ \t]+(?<comment>.*))?$"
 	nodeSshPublicKeyRegex       = regexp.MustCompile(nodeSshPublicKeyPattern)

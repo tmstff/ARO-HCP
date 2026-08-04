@@ -2400,10 +2400,12 @@
             "create"
           ]
         },
-        "nodeSshPublicKey": {
-          "type": "string",
-          "description": "The SSH public key used for secure access to cluster nodes. When set, this key\nis distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
-          "maxLength": 8192,
+        "nodeSshPublicKeys": {
+          "type": "array",
+          "description": "One or more SSH public keys used for secure access to cluster nodes. When set,\nthese keys are distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
+          "items": {
+            "type": "string"
+          },
           "x-ms-mutability": [
             "read",
             "update",
@@ -2518,10 +2520,12 @@
             "create"
           ]
         },
-        "nodeSshPublicKey": {
-          "type": "string",
-          "description": "The SSH public key used for secure access to cluster nodes. When set, this key\nis distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
-          "maxLength": 8192,
+        "nodeSshPublicKeys": {
+          "type": "array",
+          "description": "One or more SSH public keys used for secure access to cluster nodes. When set,\nthese keys are distributed to all nodes, enabling SSH access for debugging\nand maintenance purposes.",
+          "items": {
+            "type": "string"
+          },
           "x-ms-mutability": [
             "read",
             "update",

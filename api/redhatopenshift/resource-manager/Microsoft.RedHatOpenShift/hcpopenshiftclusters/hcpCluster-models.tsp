@@ -137,14 +137,13 @@ model HcpOpenShiftClusterProperties {
   @visibility(Lifecycle.Read, Lifecycle.Create)
   clusterImageRegistry?: ClusterImageRegistryProfile;
 
-  /** The SSH public key used for secure access to cluster nodes. When set, this key
-   * is distributed to all nodes, enabling SSH access for debugging
+  /** One or more SSH public keys used for secure access to cluster nodes. When set,
+   * these keys are distributed to all nodes, enabling SSH access for debugging
    * and maintenance purposes.
    */
   @visibility(Lifecycle.Read, Lifecycle.Create, Lifecycle.Update)
-  @added(Versions.v2026_06_30_preview)
-  @maxLength(8192)
-  nodeSshPublicKey?: string;
+  @added(Versions.v2026_09_01_preview)
+  nodeSshPublicKeys?: string[];
 
   /** Status of the cluster resource */
   @visibility(Lifecycle.Read)
