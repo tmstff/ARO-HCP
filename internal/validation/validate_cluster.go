@@ -268,7 +268,7 @@ func validateClusterCustomerProperties(ctx context.Context, op operation.Operati
 	}
 	for i, key := range newObj.NodeSshPublicKeys {
 		keyCopy := key
-		errs = append(errs, MatchesRegex(ctx, op, fldPath.Child("nodeSshPublicKeys").Index(i), &keyCopy, nil, nodeSshPublicKeyRegex, nodeSshPublicKeyErrorString)...)
+		errs = append(errs, ValidateSSHPublicKey(ctx, op, fldPath.Child("nodeSshPublicKeys").Index(i), &keyCopy, nil)...)
 	}
 
 	//Etcd                    EtcdProfile                 `json:"etcd,omitempty"`

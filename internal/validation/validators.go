@@ -26,6 +26,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/ssh"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/operation"
@@ -369,12 +370,6 @@ var (
 	diskEncryptionSetName            = `^[a-zA-Z0-9_-]+$`
 	diskEncryptionSetNameRegex       = regexp.MustCompile(diskEncryptionSetName)
 	diskEncryptionSetNameErrorString = `(must contain only alphanumeric characters, underscores, and hyphens)`
-
-	// nodeSshPublicKeyPattern matches a single SSH public key: <type> <base64-key> [optional comment].
-	// Uses interpreted string (not raw) so \t equals 0x09, matching the JSON-parsed openapi.json pattern.
-	nodeSshPublicKeyPattern     = "^(?<type>[A-Za-z0-9._@-]+)[ \t]+(?<key>[A-Za-z0-9+/]+=*)(?:[ \t]+(?<comment>.*))?$"
-	nodeSshPublicKeyRegex       = regexp.MustCompile(nodeSshPublicKeyPattern)
-	nodeSshPublicKeyErrorString = "(must be a valid SSH public key)"
 )
 
 func MatchesRegex(_ context.Context, _ operation.Operation, fldPath *field.Path, value, _ *string, regex *regexp.Regexp, errorString string) field.ErrorList {
@@ -388,6 +383,26 @@ func MatchesRegex(_ context.Context, _ operation.Operation, fldPath *field.Path,
 		return nil
 	}
 	return field.ErrorList{field.Invalid(fldPath, *value, errorString)}
+}
+
+func ValidateSSHPublicKey(_ context.Context, _ operation.Operation, fldPath *field.Path, value, _ *string) field.ErrorList {
+	if value == nil {
+		return nil
+	}
+	if len(strings.TrimSpace(*value)) == 0 {
+		return field.ErrorList{field.Invalid(fldPath, *value, "SSH public key must not be empty")}
+	}
+	if len(*value) > 8192 {
+		return field.ErrorList{field.TooLong(fldPath, *value, 8192)}
+	}
+	_, _, _, remainder, err := ssh.ParseAuthorizedKey([]byte(*value))
+	if err != nil {
+		return field.ErrorList{field.Invalid(fldPath, *value, err.Error())}
+	}
+	if len(strings.TrimSpace(string(remainder))) > 0 {
+		return field.ErrorList{field.Invalid(fldPath, *value, "SSH public key must contain exactly one key")}
+	}
+	return nil
 }
 
 func ValidateUUID(_ context.Context, _ operation.Operation, fldPath *field.Path, value, _ *string) field.ErrorList {
