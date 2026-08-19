@@ -16,8 +16,8 @@ ENV_VARS_FILE ?= /tmp/env.$(HASH).mk
 
 # Target to generate the environment variables file
 $(ENV_VARS_FILE): $(TEMPLATIZE) $(CONFIG_FILE) $(DEV_SETTINGS_FILE) $(ENV_MK_TMPL) $(MAKEFILE_LIST)
-	@echo "generate env vars file $(ENV_VARS_FILE)"
-	@echo "this might take a while the first time."
+	@echo "generate env vars file $(ENV_VARS_FILE)" >&2
+	@echo "this might take a while the first time." >&2
 	$(TEMPLATIZE) generate \
 		--config-file $(CONFIG_FILE) \
 		--dev-settings-file $(DEV_SETTINGS_FILE) \
