@@ -482,6 +482,7 @@ latest-services-override: $(YQ)
 #
 # One-Step Personal Dev Environment
 #
+
 ifeq ($(DEPLOY_ENV),$(filter $(DEPLOY_ENV),pers swft))
 ifdef USE_LATEST_IMAGES
 personal-dev-env: latest-services-override install-tools
@@ -502,6 +503,57 @@ personal-dev-env:
 	$(error personal-dev-env: DEPLOY_ENV must be set to "pers" or "swft", not "$(DEPLOY_ENV)")
 endif
 .PHONY: personal-dev-env
+
+# personal-dev-env-quick is a faster alternative to personal-dev-env.
+#
+# Instead of rebuilding all in-repo service images unconditionally, it compares
+# each service's local source against the latest CI image already in ACR:
+#
+#   - Unchanged service: the latest CI image's git commit tag is present in the
+#     local history AND git-diff shows no committed or uncommitted changes in
+#     the service's source directories since that commit.  The CI image is used
+#     directly via record-latest-override (no build, no push).
+#
+#   - Changed service: local source differs from the CI image commit → the
+#     service is rebuilt and pushed, identical to personal-dev-env.
+#
+# "internal/" is watched together with each service's own directory, so a
+# change to the shared library triggers rebuilds of all affected services.
+#
+# Any doubt (ACR query fails, tag not in local git history, etc.) causes that
+# service to be rebuilt — the safe fallback.
+#
+# Requires DEPLOY_ENV=pers or DEPLOY_ENV=swft, same as personal-dev-env.
+ifeq ($(DEPLOY_ENV),$(filter $(DEPLOY_ENV),pers swft))
+personal-dev-env-quick: install-tools
+	$(eval IMAGE_TAG := $(shell DETECT_DIRTY_GIT_WORKTREE=${DETECT_DIRTY_GIT_WORKTREE} DEPLOY_ENV=${DEPLOY_ENV} ./generate-tag.sh))
+	$(eval ARO_HCP_REVISION := $(shell git rev-parse HEAD))
+	$(eval export IMAGE_TAG ARO_HCP_REVISION)
+	$(MAKE) smart-services-override
+	$(MAKE) entrypoint/Region OVERRIDE_CONFIG_FILE=$(PERS_OVERRIDE_FILE)
+	$(MAKE) infra.svc.aks.kubeconfig infra.mgmt.aks.kubeconfig infra.tracing infra.cosmos.access
+else
+personal-dev-env-quick:
+	$(error personal-dev-env-quick: DEPLOY_ENV must be set to "pers" or "swft", not "$(DEPLOY_ENV)")
+endif
+.PHONY: personal-dev-env-quick
+
+# smart-services-override: builds changed services, uses latest CI image for
+# unchanged ones.  Called by personal-dev-env-quick.
+# Requires IMAGE_TAG and ARO_HCP_REVISION to be exported before calling.
+smart-services-override: $(YQ)
+	hack/build-changed-services.sh
+	$(YQ) eval-all '. as $$item ireduce ({}; . * $$item)' \
+	  /tmp/_frontend-override.yaml \
+	  /tmp/_backend-override.yaml \
+	  /tmp/_admin-override.yaml \
+	  /tmp/_sessiongate-override.yaml \
+	  /tmp/_mgmt-agent-override.yaml \
+	  /tmp/_kube-applier-override.yaml \
+	  /tmp/_fleet-override.yaml \
+	  /tmp/_aro-hcp-exporter-override.yaml \
+	  > $(PERS_OVERRIDE_FILE)
+.PHONY: smart-services-override
 
 #
 # Dev CI topology local run
