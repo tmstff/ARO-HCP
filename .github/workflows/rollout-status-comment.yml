@@ -5,12 +5,16 @@ name: "Rollout Status Comment"
 on:
   pull_request_target:
     types: [closed]
+  # TEST-ONLY: push trigger so the workflow runs on the branch without a merge.
+  # Remove this block and the test-comment job before the real PR merges.
+  push:
+    branches: [rollout-status-comment]
 permissions:
   pull-requests: write
 jobs:
   comment:
     # Only merged PRs - a closed-without-merge PR never rolls out.
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
     - name: Post rollout status link
@@ -26,3 +30,34 @@ jobs:
             issue_number: pr,
             body: `Rollout Status: ${url}`,
           });
+  # TEST-ONLY job: runs on push to the branch, resolves the open PR for this
+  # branch, and posts the same comment - proving the token and github-script
+  # path work on a fork without needing a merge. Remove with the push trigger.
+  test-comment:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post rollout status link (test path)
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const branch = context.ref.replace('refs/heads/', '');
+          const prs = await github.rest.pulls.list({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            head: `${context.repo.owner}:${branch}`,
+          });
+          if (prs.data.length === 0) {
+            core.setFailed(`No open PR found for branch ${branch}; open one so the test can comment on it.`);
+            return;
+          }
+          const pr = prs.data[0].number;
+          const url = `https://releases.dev.aro.azure-test.net/releases/versions?mode=pr&repo=aro-hcp&pr=${pr}`;
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr,
+            body: `Rollout Status: ${url}`,
+          });
+          core.info(`Posted rollout status comment on PR #${pr}.`);
